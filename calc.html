@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Калькулятор кредиту</title>
+
+<!-- ===== ЧАСТИНА 1: СТИЛІ (CSS) — як усе виглядає ===== -->
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1b2430;
+    --muted: #667085;
+    --accent: #1a8f4e;     /* головний колір: кнопка, акценти */
+    --border: #dde1e7;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161c; --card: #1b212a; --text: #e8ecf1;
+      --muted: #98a2b3; --accent: #3ecf82; --border: #303846;
+      color-scheme: dark;
+    }
+  }
+  html { height: 100%; }
+  body {
+    margin: 0; min-height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center; padding: 20px 16px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px; width: 100%; max-width: 420px;
+    align-self: flex-start;
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 18px; }
+  label { display: block; font-size: .9rem; color: var(--muted); margin: 14px 0 6px; }
+  input {
+    width: 100%; box-sizing: border-box; padding: 11px 12px;
+    font-size: 1rem; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  button {
+    width: 100%; margin-top: 20px; padding: 12px;
+    font-size: 1rem; font-weight: 600; color: #fff;
+    background: var(--accent); border: 0; border-radius: 8px; cursor: pointer;
+  }
+  #result { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .big { font-size: 1.8rem; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); }
+  .row b { color: var(--text); }
+  .error { color: #d92d20; }
+</style>
+</head>
+
+<body>
+
+<!-- ===== ЧАСТИНА 2: РОЗМІТКА (HTML) — що є на сторінці ===== -->
+<div class="card">
+  <h1>Калькулятор кредиту</h1>
+
+  <label for="sum">Сума кредиту, грн</label>
+  <input id="sum" type="number" value="200000" inputmode="decimal">
+
+  <label for="rate">Річна ставка, %</label>
+  <input id="rate" type="number" value="18" inputmode="decimal">
+
+  <label for="months">Строк, місяців</label>
+  <input id="months" type="number" value="24" inputmode="numeric">
+
+  <button id="go">Розрахувати</button>
+
+  <div id="result"></div>
+</div>
+
+<!-- ===== ЧАСТИНА 3: ЛОГІКА (JavaScript) — що відбувається після натискання ===== -->
+<script>
+  // Форматуємо число як гроші: 12345.6 -> "12 345,60 грн"
+  function money(x) {
+    return x.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " грн";
+  }
+
+  function calculate() {
+    // 1. Беремо значення з полів
+    const sum = Number(document.getElementById("sum").value);
+    const yearRate = Number(document.getElementById("rate").value);
+    const months = Number(document.getElementById("months").value);
+    const out = document.getElementById("result");
+
+    // 2. Перевіряємо, що дані коректні
+    if (sum <= 0 || months <= 0 || yearRate < 0) {
+      out.innerHTML = '<span class="error">Перевірте дані: сума і строк мають бути більше нуля.</span>';
+      return;
+    }
+
+    // 3. Рахуємо за формулою ануїтетного платежу
+    const r = yearRate / 100 / 12;          // ставка за один місяць
+    let payment;
+    if (r === 0) {
+      payment = sum / months;               // без відсотків: просто ділимо
+    } else {
+      payment = sum * r / (1 - Math.pow(1 + r, -months));
+    }
+    const total = payment * months;         // скільки всього віддамо
+    const overpay = total - sum;            // скільки з цього — відсотки
+
+    // 4. Показуємо результат на сторінці
+    out.innerHTML =
+      '<div style="color:var(--muted)">Щомісячний платіж</div>' +
+      '<div class="big">' + money(payment) + '</div>' +
+      '<div class="row"><span>Всього виплатите</span><b>' + money(total) + '</b></div>' +
+      '<div class="row"><span>Переплата</span><b>' + money(overpay) + '</b></div>';
+  }
+
+  // Прив'язуємо розрахунок до кнопки і одразу показуємо результат
+  document.getElementById("go").addEventListener("click", calculate);
+  calculate();
+</script>
+
+</body>
+</html>
